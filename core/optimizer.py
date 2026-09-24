@@ -58,60 +58,75 @@ def calc_penalty(grids, r_count, c_count):
 
     return pen
 
-def run_sa_optimization(lines, num_reps, r_count, c_count, progress_callback=None):
-    # Rep 1 is fixed serpentine
-    r1 = [[None] * c_count for _ in range(r_count)]
-    i = 0
-    for r in range(r_count):
-        cols = range(c_count) if r % 2 == 0 else range(c_count - 1, -1, -1)
-        for c in cols:
-            r1[r][c] = lines[i]
-            i += 1
+def run_sa_optimization(
+    lines, num_reps, r_count, c_count, progress_callback=None, seed=None
+):
+  # Set seed if provided, otherwise leave random state dynamic
+  if seed is not None:
+    random.seed(seed)
 
-    all_grids = [r1]
-    make_grid = lambda lst: [lst[i * c_count : (i + 1) * c_count] for i in range(r_count)]
-    rep_lines = []
-    
-    for _ in range(1, num_reps):
-        temp_lines = lines[:]
-        random.shuffle(temp_lines)
-        all_grids.append(make_grid(temp_lines))
-        rep_lines.append(temp_lines)
+  # Rep 1 is fixed serpentine
+  r1 = [[None] * c_count for _ in range(r_count)]
+  i = 0
+  for r in range(r_count):
+    cols = range(c_count) if r % 2 == 0 else range(c_count - 1, -1, -1)
+    for c in cols:
+      r1[r][c] = lines[i]
+      i += 1
 
-    score = calc_penalty(all_grids, r_count, c_count)
-    best_grids = [[row[:] for row in g] for g in all_grids]
-    best_score = score
+  all_grids = [r1]
+  make_grid = lambda lst: [
+      lst[j * c_count : (j + 1) * c_count] for j in range(r_count)
+  ]
+  rep_lines = []
 
-    t, alpha, iters = 400.0, 0.99995, 200000
+  for _ in range(1, num_reps):
+    temp_lines = lines[:]
+    random.shuffle(temp_lines)
+    all_grids.append(make_grid(temp_lines))
+    rep_lines.append(temp_lines)
 
-    for step in range(iters):
-        if best_score == 0: break
-        
-        if progress_callback and step % 20000 == 0:
-            progress_callback(step / iters)
+  score = calc_penalty(all_grids, r_count, c_count)
+  best_grids = [[row[:] for row in g] for g in all_grids]
+  best_score = score
 
-        target_rep = random.randint(1, num_reps - 1)
-        idx1, idx2 = random.sample(range(len(lines)), 2)
+  t, alpha, iters = 400.0, 0.99995, 200000
 
-        # swap
-        rep_lines[target_rep - 1][idx1], rep_lines[target_rep - 1][idx2] = rep_lines[target_rep - 1][idx2], rep_lines[target_rep - 1][idx1]
-        all_grids[target_rep] = make_grid(rep_lines[target_rep - 1])
+  for step in range(iters):
+    if best_score == 0:
+      break
 
-        new_score = calc_penalty(all_grids, r_count, c_count)
-        diff = new_score - score
+    if progress_callback and step % 20000 == 0:
+      progress_callback(step / iters)
 
-        if diff < 0 or random.random() < math.exp(-diff / max(t, 1e-6)):
-            score = new_score
-            if score < best_score:
-                best_score = score
-                best_grids = [[row[:] for row in g] for g in all_grids]
-        else:
-            # revert
-            rep_lines[target_rep - 1][idx1], rep_lines[target_rep - 1][idx2] = rep_lines[target_rep - 1][idx2], rep_lines[target_rep - 1][idx1]
-            all_grids[target_rep] = make_grid(rep_lines[target_rep - 1])
+    target_rep = random.randint(1, num_reps - 1)
+    idx1, idx2 = random.sample(range(len(lines)), 2)
 
-        t *= alpha
-        
-    if progress_callback:
-        progress_callback(1.0)
-    return best_grids, best_score
+    # Swap
+    rep_lines[target_rep - 1][idx1], rep_lines[target_rep - 1][idx2] = (
+        rep_lines[target_rep - 1][idx2],
+        rep_lines[target_rep - 1][idx1],
+    )
+    all_grids[target_rep] = make_grid(rep_lines[target_rep - 1])
+
+    new_score = calc_penalty(all_grids, r_count, c_count)
+    diff = new_score - score
+
+    if diff < 0 or random.random() < math.exp(-diff / max(t, 1e-6)):
+      score = new_score
+      if score < best_score:
+        best_score = score
+        best_grids = [[row[:] for row in g] for g in all_grids]
+    else:
+      # Revert
+      rep_lines[target_rep - 1][idx1], rep_lines[target_rep - 1][idx2] = (
+          rep_lines[target_rep - 1][idx2],
+          rep_lines[target_rep - 1][idx1],
+      )
+      all_grids[target_rep] = make_grid(rep_lines[target_rep - 1])
+
+    t *= alpha
+
+  if progress_callback:
+    progress_callback(1.0)
+  return best_grids, best_score

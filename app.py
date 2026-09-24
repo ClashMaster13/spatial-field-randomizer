@@ -5,8 +5,6 @@ import signal
 from core.optimizer import run_sa_optimization
 from core.fieldbook import generate_excel_bytes
 
-# Fix seed for reproducible field layouts
-random.seed(42)
 
 st.set_page_config(page_title="Spatial Field Trial Randomizer", layout="wide")
 
@@ -53,8 +51,14 @@ with c2:
         start_plot = st.number_input("Starting Plot", min_value=1, value=1)
         start_row = st.number_input("Starting Row", min_value=1, value=1)
         start_col = st.number_input("Starting Col", min_value=1, value=1)
+        
+    seed_val = st.number_input(
+        "Random Seed (For Reproducibility)", min_value=0, max_value=999999, value=42
+    )
+    run_btn = st.button("🚀 Run Optimization", type="primary")
 
-    run_btn = st.button("🚀 Generate Fieldbook", type="primary")
+if run_btn:
+  random.seed(seed_val)
 
 if run_btn:
     if not trial_name.strip():
