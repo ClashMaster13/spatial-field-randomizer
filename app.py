@@ -27,6 +27,10 @@ with st.sidebar:
     ):
       st.warning("Server shutting down. You can close this browser tab.")
       os.kill(os.getpid(), signal.SIGTERM)
+    
+    st.markdown("---")
+    st.markdown("**Developed by Sudip Kundu**")
+    st.markdown("[Connect on LinkedIn](https://www.linkedin.com/in/sudip-kundu-698b43188/)")
 
 st.title("🌾 Spatial Field Trial Randomizer")
 st.markdown("This tool automates spatial field layout generation to minimize boundary and neighborhood collisions between genotypes.")
