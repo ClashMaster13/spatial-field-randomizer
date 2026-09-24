@@ -10,16 +10,28 @@ random.seed(42)
 
 st.set_page_config(page_title="Spatial Field Trial Randomizer", layout="wide")
 
-# Sidebar for session control
+is_cloud = (
+    os.path.exists("/home/appuser")
+    or os.environ.get("STREAMLIT_SERVER_GATHER_USAGE_STATS") == "false"
+    and not os.name == "nt"
+    or "HOSTNAME" in os.environ
+    and "streamlit" in os.environ["HOSTNAME"].lower()
+)
+
 with st.sidebar:
-    st.subheader("Session Control")
-    st.info("When running locally via SFX, use this to close the process safely.")
-    if st.button("🛑 Exit", type="primary", use_container_width=True):
-        st.warning("Server shutting down. You can close this browser tab.")
-        os.kill(os.getpid(), signal.SIGTERM)
+  st.subheader("Session Control")
+  if is_cloud:
+    st.caption("ℹ️ Running on Streamlit Community Cloud (hosted demo).")
+  else:
+    st.info("Local session active.")
+    if st.button(
+        "🛑 Stop Server & Exit", type="primary", use_container_width=True
+    ):
+      st.warning("Server shutting down. You can close this browser tab.")
+      os.kill(os.getpid(), signal.SIGTERM)
 
 st.title("🌾 Spatial Field Trial Randomizer")
-st.markdown("Automated layout generation using simulated annealing to minimize boundary and neighborhood collisions.")
+st.markdown("Automated spatial field layout generation to minimize boundary and neighborhood collisions between genotypes.")
 
 c1, c2 = st.columns([1, 2])
 
