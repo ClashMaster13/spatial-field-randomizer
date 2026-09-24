@@ -25,7 +25,7 @@ with st.sidebar:
   else:
     st.info("Local session active.")
     if st.button(
-        "🛑 Stop Server & Exit", type="primary", use_container_width=True
+        "🛑 Exit", type="primary", use_container_width=True
     ):
       st.warning("Server shutting down. You can close this browser tab.")
       os.kill(os.getpid(), signal.SIGTERM)
