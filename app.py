@@ -31,7 +31,7 @@ with st.sidebar:
       os.kill(os.getpid(), signal.SIGTERM)
 
 st.title("🌾 Spatial Field Trial Randomizer")
-st.markdown("Automated spatial field layout generation to minimize boundary and neighborhood collisions between genotypes.")
+st.markdown("This tool automates spatial field layout generation to minimize boundary and neighborhood collisions between genotypes.")
 
 c1, c2 = st.columns([1, 2])
 
