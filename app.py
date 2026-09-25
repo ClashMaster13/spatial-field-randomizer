@@ -18,19 +18,19 @@ is_cloud = (
 
 with st.sidebar:
   st.subheader("Session Control")
-  if is_cloud:
-    st.caption("ℹ️ Running on Streamlit Community Cloud (hosted demo).")
-  else:
-    st.info("Local session active.")
-    if st.button(
-        "🛑 Exit", type="primary", use_container_width=True
-    ):
-      st.warning("Server shutting down. You can close this browser tab.")
-      os.kill(os.getpid(), signal.SIGTERM)
+      if is_cloud:
+        st.caption("ℹ️ Running on Streamlit Community Cloud (hosted demo).")
+      else:
+        st.info("Local session active.")
+        if st.button(
+            "🛑 Exit", type="primary", use_container_width=True
+        ):
+          st.warning("Server shutting down. You can close this browser tab.")
+          os.kill(os.getpid(), signal.SIGTERM)
     
-st.markdown("---")
-st.markdown("**Developed by Sudip Kundu**")
-st.markdown("[Connect on LinkedIn](https://www.linkedin.com/in/sudip-kundu-698b43188/)")
+    st.markdown("---")
+    st.markdown("**Developed by Sudip Kundu**")
+    st.markdown("[Connect on LinkedIn](https://www.linkedin.com/in/sudip-kundu-698b43188/)")
 
 st.title("🌾 Spatial Field Trial Randomizer")
 st.markdown("This tool automates spatial field layout generation to minimize boundary and neighborhood collisions between genotypes.")
