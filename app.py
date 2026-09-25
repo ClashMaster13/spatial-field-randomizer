@@ -18,15 +18,15 @@ is_cloud = (
 
 with st.sidebar:
   st.subheader("Session Control")
-      if is_cloud:
+    if is_cloud:
         st.caption("ℹ️ Running on Streamlit Community Cloud (hosted demo).")
-      else:
+    else:
         st.info("Local session active.")
-        if st.button(
-            "🛑 Exit", type="primary", use_container_width=True
-        ):
-          st.warning("Server shutting down. You can close this browser tab.")
-          os.kill(os.getpid(), signal.SIGTERM)
+    if st.button(
+        "🛑 Exit", type="primary", use_container_width=True
+    ):
+        st.warning("Server shutting down. You can close this browser tab.")
+        os.kill(os.getpid(), signal.SIGTERM)
     
     st.markdown("---")
     st.markdown("**Developed by Sudip Kundu**")
