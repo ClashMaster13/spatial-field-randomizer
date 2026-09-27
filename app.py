@@ -24,8 +24,7 @@ with st.sidebar:
     st.info("Local session active.")
     if st.button("🛑 Exit", type="primary", use_container_width=True):
       os.kill(os.getpid(), signal.SIGTERM)
-
-  # ✅ Place it outside if/else, but still inside `with st.sidebar:`
+      
   st.markdown("---")
   st.markdown("**Developed by Sudip Kundu**")
   st.markdown("[Connect on LinkedIn](https://www.linkedin.com/in/sudip-kundu-698b43188/)")
