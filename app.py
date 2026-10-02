@@ -69,7 +69,12 @@ with c2:
             location_name = st.text_input("Location Name", value="", placeholder="e.g., Lucknow")
             num_rows = st.number_input("No. of Rows (per plot)", min_value=1, value=1)
             area = st.text_input("Required Area (Sqmt.)", value="", placeholder="e.g., 900")
-      
+            
+            include_dos = st.checkbox("Include Date of Sowing (DOS) row?")
+            dos = None
+            if include_dos:
+                dos = st.text_input("Date of Sowing (DOS)", value="", placeholder="Leave blank to write on paper")
+                
         trial_details = {
             "crop_season": crop_season,
             "num_locations": num_locations,
@@ -77,7 +82,9 @@ with c2:
             "location_name": location_name,
             "num_rows": num_rows,
             "area": area,
+            "dos": dos,
             "n_entries": n_lines
+            
         }
     st.markdown("---")
     append_to_existing = st.checkbox("Append to an existing Excel file?")

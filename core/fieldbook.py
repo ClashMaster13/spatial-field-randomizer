@@ -140,12 +140,14 @@ def generate_excel_bytes(trial_name, genotypes, final_grids, reps, rows, cols, s
             cell.border = Border(top=t, bottom=b, left=l, right=re)
 
     if trial_details:
+        has_dos = trial_details.get("dos") is not None
+        header_rows = 7 if has_dos else 6
         
-        # Insert 8 empty rows at the top (6 for the header, 2 for spacing)
-        ws1.insert_rows(idx=1, amount=8)
+        # Insert empty rows at the top spacing
+        ws1.insert_rows(idx=1, amount=header_rows + 2)
         
         # Calculate width of the table to merge across
-        max_cols = 6 + (reps - 1)
+        max_cols = 5 + (reps - 1) + len(extra_cols)
         if max_cols < 4: max_cols = 4
         
         thin = Side(border_style="thin", color="000000")
@@ -192,12 +194,19 @@ def generate_excel_bytes(trial_name, genotypes, final_grids, reps, rows, cols, s
         style_cell(5, 1, f"No. of Rep. - {reps:02d}")
         style_cell(5, 4, f"Required Area (Sqmt) - {trial_details['area']}")
         
-        # 6. Location
-        ws1.merge_cells(start_row=6, start_column=1, end_row=6, end_column=max_cols)
-        style_cell(6, 1, f"Location: {trial_details['location_name']}", fill=orange, align=center, font=tnr_bold)
+        # 6. Dynamic DOS
+        current_row = 6
+        if has_dos:
+            ws1.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=max_cols)
+            style_cell(current_row, 1, f"DOS - {trial_details['dos']}")
+            current_row +=1
+        
+        # 7. Location
+        ws1.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=max_cols)
+        style_cell(current_row, 1, f"Location: {trial_details['location_name']}", fill=orange, align=center, font=tnr_bold)
         
         # Apply Borders
-        for r in range(1, 7):
+        for r in range(1, current_row + 1):
             for c in range(1, max_cols + 1):
                 ws1.cell(row=r, column=c).border = box_border
 
