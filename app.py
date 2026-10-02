@@ -92,10 +92,21 @@ with c2:
     if append_to_existing:
         existing_file = st.file_uploader("Upload Master Workbook (.xlsx)", type=["xlsx"])
         
+    st.markdown("---")
+    add_traits = st.checkbox("Add Custom Trait Columns for Data Collection?")
+    traits_list = []
+    if add_traits:
+        traits_input = st.text_area(
+            "Enter traits separated by commas", 
+            placeholder="e.g., GERM %, P.P, DFL, PH (cm), Grain Wt (Kg)"
+        )
+        if traits_input.strip():
+            traits_list = [x.strip() for x in traits_input.split(",") if x.strip()]
+        
     seed_val = st.number_input(
         "Random Seed (For Reproducibility)", min_value=0, max_value=999999, value=42
     )
-    run_btn = st.button("🚀 Run Optimization", type="primary")
+    run_btn = st.button("🚀 Generate Fieldbook", type="primary")
 
 if run_btn:
   random.seed(seed_val)
@@ -119,9 +130,9 @@ if run_btn:
 
         # 1. Run Core Optimizer
         final_grids, final_score = run_sa_optimization(genotypes, reps, rows, cols, update_progress)
-        st.write(f"**Optimization complete.** Final Penalty Score: `{final_score}`")
-        if final_score > 0:
-            st.caption("Note: Score > 0 indicates forced neighbor collisions due to strict mathematical limits in small grid sizes.")
+        
+        # Save score to session state so it survives the download click
+        st.session_state["final_score"] = final_score
             
         # 2. Generate Excel bytes
         excel_data = generate_excel_bytes(
@@ -135,19 +146,30 @@ if run_btn:
             start_row,
             start_col,
             trial_details=trial_details,
-            existing_file=existing_file)
-        # Determine the filename AND the button text
-        if existing_file is not None:
-            dl_name = existing_file.name
-            btn_label = f"💾 Download Updated Master: {existing_file.name}"
-        else:
-            dl_name = f"{trial_name}_Field_Layout.xlsx".replace(" ", "_")
-            btn_label = f"💾 Download {trial_name} Layout"
-        
-        st.download_button(
-            label=btn_label, 
-            data=excel_data, 
-            file_name=dl_name, 
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            type="primary"
+            existing_file=existing_file,
+            traits_list=traits_list
         )
+            
+        # 3. Store file data and labels in Session State
+        st.session_state["excel_data"] = excel_data
+        
+        if existing_file is not None:
+            st.session_state["dl_name"] = existing_file.name
+            st.session_state["btn_label"] = f"💾 Download Updated Master: {existing_file.name}"
+        else:
+            st.session_state["dl_name"] = f"{trial_name}_Field_Layout.xlsx".replace(" ", "_")
+            st.session_state["btn_label"] = f"💾 Download {trial_name} Layout"
+
+# 4. OUTSIDE THE RUN BLOCK: Display results and download button
+if "excel_data" in st.session_state:
+    st.write(f"**Optimization complete.** Final Penalty Score: `{st.session_state['final_score']}`")
+    if st.session_state["final_score"] > 0:
+        st.caption("Note: Score > 0 indicates forced neighbor collisions due to strict mathematical limits in small grid sizes.")
+        
+    st.download_button(
+        label=st.session_state["btn_label"], 
+        data=st.session_state["excel_data"], 
+        file_name=st.session_state["dl_name"], 
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        type="primary"
+    )

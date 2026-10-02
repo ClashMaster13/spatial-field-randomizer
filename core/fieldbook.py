@@ -18,7 +18,7 @@ def get_color_palette(n):
     for _ in range(len(palette), n): extended.append(("F5F5F5", "000000"))
     return extended
 
-def generate_excel_bytes(trial_name, genotypes, final_grids, reps, rows, cols, start_plot, start_row, start_col, trial_details=None, existing_file=None):
+def generate_excel_bytes(trial_name, genotypes, final_grids, reps, rows, cols, start_plot, start_row, start_col, trial_details=None, existing_file=None, traits_list=None):
     # 1. Map plots
     plot_map = {g: {} for g in genotypes}
     curr_p = start_plot
@@ -55,13 +55,18 @@ def generate_excel_bytes(trial_name, genotypes, final_grids, reps, rows, cols, s
     border_thin = Border(left=Side(style="thin"), right=Side(style="thin"), top=Side(style="thin"), bottom=Side(style="thin"))
 
     # Sheet 1: Fieldbook
+    #Prepare dynamic trait columns
+    extra_cols = traits_list if traits_list else []
+    if "Remarks" not in extra_cols:
+        extra_cols.append("Remarks")
+        
     r_idx = 1
 
     for rep in range(1, reps + 1):
         ws1.cell(row=r_idx, column=1, value=f"REP {rep} ORDER").font = tnr_bold
         r_idx += 1
         others = [x for x in range(1, reps + 1) if x != rep]
-        headers = ["S. No.", "Genotype", f"R{rep} Row", f"R{rep} Col", f"R{rep} Plot"] + [f"R{x} Plot" for x in others] + ["Remarks"]
+        headers = ["S. No.", "Genotype", f"R{rep} Row", f"R{rep} Col", f"R{rep} Plot"] + [f"R{x} Plot" for x in others] + extra_cols
 
         for c_idx, h in enumerate(headers, 1):
             c = ws1.cell(row=r_idx, column=c_idx, value=h)
@@ -71,7 +76,7 @@ def generate_excel_bytes(trial_name, genotypes, final_grids, reps, rows, cols, s
         sorted_lines = sorted(genotypes, key=lambda x: plot_map[x][rep]["plot"])
         for i, g in enumerate(sorted_lines, 1):
             data = plot_map[g][rep]
-            row_data = [i, g, data["row"], data["col"], data["plot"]] + [plot_map[g][x]["plot"] for x in others] + [""]
+            row_data = [i, g, data["row"], data["col"], data["plot"]] + [plot_map[g][x]["plot"] for x in others] + [""] * len(extra_cols)
             for c_idx, val in enumerate(row_data, 1):
                 c = ws1.cell(row=r_idx, column=c_idx, value=val)
                 c.font, c.alignment, c.border = tnr_norm, align_c, border_thin
