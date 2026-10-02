@@ -18,7 +18,7 @@ def get_color_palette(n):
     for _ in range(len(palette), n): extended.append(("F5F5F5", "000000"))
     return extended
 
-def generate_excel_bytes(trial_name, genotypes, final_grids, reps, rows, cols, start_plot, start_row, start_col):
+def generate_excel_bytes(trial_name, genotypes, final_grids, reps, rows, cols, start_plot, start_row, start_col, trial_details=None, existing_file=None):
     # 1. Map plots
     plot_map = {g: {} for g in genotypes}
     curr_p = start_plot
@@ -38,7 +38,15 @@ def generate_excel_bytes(trial_name, genotypes, final_grids, reps, rows, cols, s
     colors = get_color_palette(len(genotypes))
     color_dict = {g: colors[idx] for idx, g in enumerate(genotypes)}
 
-    wb = openpyxl.Workbook()
+    # Check if we are appending or creating new
+    if existing_file is not None:
+        wb = openpyxl.load_workbook(existing_file)
+        ws1 = wb.create_sheet(title=f"{trial_name} Fieldbook"[:31])
+    else:
+        wb = openpyxl.Workbook()
+        ws1 = wb.active
+        ws1.title = f"{trial_name} Fieldbook"[:31]
+
     tnr_norm = Font(name="Times New Roman")
     tnr_bold = Font(name="Times New Roman", bold=True)
     tnr_head = Font(name="Times New Roman", bold=True, color="FFFFFF")
@@ -47,15 +55,13 @@ def generate_excel_bytes(trial_name, genotypes, final_grids, reps, rows, cols, s
     border_thin = Border(left=Side(style="thin"), right=Side(style="thin"), top=Side(style="thin"), bottom=Side(style="thin"))
 
     # Sheet 1: Fieldbook
-    ws1 = wb.active
-    ws1.title = f"{trial_name} Fieldbook"[:31]
     r_idx = 1
 
     for rep in range(1, reps + 1):
         ws1.cell(row=r_idx, column=1, value=f"REP {rep} ORDER").font = tnr_bold
         r_idx += 1
         others = [x for x in range(1, reps + 1) if x != rep]
-        headers = ["S. No.", "Genotype", f"R{rep} Row", f"R{rep} Col", f"R{rep} Plot"] + [f"R{x} Plot" for x in others]
+        headers = ["S. No.", "Genotype", f"R{rep} Row", f"R{rep} Col", f"R{rep} Plot"] + [f"R{x} Plot" for x in others] + ["Remarks"]
 
         for c_idx, h in enumerate(headers, 1):
             c = ws1.cell(row=r_idx, column=c_idx, value=h)
@@ -65,7 +71,7 @@ def generate_excel_bytes(trial_name, genotypes, final_grids, reps, rows, cols, s
         sorted_lines = sorted(genotypes, key=lambda x: plot_map[x][rep]["plot"])
         for i, g in enumerate(sorted_lines, 1):
             data = plot_map[g][rep]
-            row_data = [i, g, data["row"], data["col"], data["plot"]] + [plot_map[g][x]["plot"] for x in others]
+            row_data = [i, g, data["row"], data["col"], data["plot"]] + [plot_map[g][x]["plot"] for x in others] + [""]
             for c_idx, val in enumerate(row_data, 1):
                 c = ws1.cell(row=r_idx, column=c_idx, value=val)
                 c.font, c.alignment, c.border = tnr_norm, align_c, border_thin
@@ -132,6 +138,68 @@ def generate_excel_bytes(trial_name, genotypes, final_grids, reps, rows, cols, s
             elif c == cols + 2: re = thick
                 
             cell.border = Border(top=t, bottom=b, left=l, right=re)
+
+    if trial_details:
+        
+        # Insert 8 empty rows at the top (6 for the header, 2 for spacing)
+        ws1.insert_rows(idx=1, amount=8)
+        
+        # Calculate width of the table to merge across
+        max_cols = 6 + (reps - 1)
+        if max_cols < 4: max_cols = 4
+        
+        thin = Side(border_style="thin", color="000000")
+        box_border = Border(left=thin, right=thin, top=thin, bottom=thin)
+        center = Alignment(horizontal="center", vertical="center")
+        left = Alignment(horizontal="left", vertical="center")
+        
+        tnr_bold = Font(name="Times New Roman", size=11, bold=True)
+        tnr_norm = Font(name="Times New Roman", size=11)
+        
+        pink = PatternFill(start_color="FFCCFF", end_color="FFCCFF", fill_type="solid")
+        cyan = PatternFill(start_color="CCFFFF", end_color="CCFFFF", fill_type="solid")
+        orange = PatternFill(start_color="FFCC99", end_color="FFCC99", fill_type="solid")
+
+        def style_cell(r, c, val, fill=None, align=left, font=tnr_norm):
+            cell = ws1.cell(row=r, column=c, value=val)
+            if fill: cell.fill = fill
+            cell.alignment = align
+            cell.font = font
+
+        # 1. Crop/Season
+        ws1.merge_cells(start_row=1, start_column=1, end_row=1, end_column=max_cols)
+        style_cell(1, 1, trial_details["crop_season"], fill=pink, align=center, font=tnr_bold)
+        
+        # 2. Trial Name
+        ws1.merge_cells(start_row=2, start_column=1, end_row=2, end_column=max_cols)
+        style_cell(2, 1, trial_name, fill=cyan, align=center, font=tnr_bold)
+        
+        # 3. Locations / Rows
+        ws1.merge_cells(start_row=3, start_column=1, end_row=3, end_column=3)
+        ws1.merge_cells(start_row=3, start_column=4, end_row=3, end_column=max_cols)
+        style_cell(3, 1, f"No. of Locations - {trial_details['num_locations']:02d}")
+        style_cell(3, 4, f"No. of Rows - {trial_details['num_rows']}")
+        
+        # 4. Entries / Row Length
+        ws1.merge_cells(start_row=4, start_column=1, end_row=4, end_column=3)
+        ws1.merge_cells(start_row=4, start_column=4, end_row=4, end_column=max_cols)
+        style_cell(4, 1, f"No. of Entries - {trial_details['n_entries']}")
+        style_cell(4, 4, f"Row Length (m) - {trial_details['row_length']}")
+        
+        # 5. Reps / Required Area
+        ws1.merge_cells(start_row=5, start_column=1, end_row=5, end_column=3)
+        ws1.merge_cells(start_row=5, start_column=4, end_row=5, end_column=max_cols)
+        style_cell(5, 1, f"No. of Rep. - {reps:02d}")
+        style_cell(5, 4, f"Required Area (Sqmt) - {trial_details['area']}")
+        
+        # 6. Location
+        ws1.merge_cells(start_row=6, start_column=1, end_row=6, end_column=max_cols)
+        style_cell(6, 1, f"Location: {trial_details['location_name']}", fill=orange, align=center, font=tnr_bold)
+        
+        # Apply Borders
+        for r in range(1, 7):
+            for c in range(1, max_cols + 1):
+                ws1.cell(row=r, column=c).border = box_border
 
     out = io.BytesIO()
     wb.save(out)

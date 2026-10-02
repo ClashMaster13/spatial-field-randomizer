@@ -53,6 +53,38 @@ with c2:
         start_row = st.number_input("Starting Row", min_value=1, value=1)
         start_col = st.number_input("Starting Col", min_value=1, value=1)
         
+         
+    st.markdown("---")
+    use_trial_details = st.checkbox("Add Extended Trial Details to Excel Header")
+    trial_details = None
+    if use_trial_details:
+        with st.container():
+            c_det1, c_det2 = st.columns(2)
+        with c_det1:
+            # Using placeholders instead of fixed values
+            crop_season = st.text_input("Crop & Season", value="", placeholder="e.g., Wheat Rabi (2026-27)")
+            num_locations = st.number_input("No. of Locations", min_value=1, value=1)
+            row_length = st.text_input("Row Length (m)", value="", placeholder="e.g., 4 m")
+        with c_det2:
+            location_name = st.text_input("Location Name", value="", placeholder="e.g., Lucknow")
+            num_rows = st.number_input("No. of Rows (per plot)", min_value=1, value=1)
+            area = st.text_input("Required Area (Sqmt.)", value="", placeholder="e.g., 900")
+      
+        trial_details = {
+            "crop_season": crop_season,
+            "num_locations": num_locations,
+            "row_length": row_length,
+            "location_name": location_name,
+            "num_rows": num_rows,
+            "area": area,
+            "n_entries": n_lines
+        }
+    st.markdown("---")
+    append_to_existing = st.checkbox("Append to an existing Excel file?")
+    existing_file = None
+    if append_to_existing:
+        existing_file = st.file_uploader("Upload Master Workbook (.xlsx)", type=["xlsx"])
+        
     seed_val = st.number_input(
         "Random Seed (For Reproducibility)", min_value=0, max_value=999999, value=42
     )
@@ -85,11 +117,28 @@ if run_btn:
             st.caption("Note: Score > 0 indicates forced neighbor collisions due to strict mathematical limits in small grid sizes.")
             
         # 2. Generate Excel bytes
-        excel_data = generate_excel_bytes(trial_name, genotypes, final_grids, reps, rows, cols, start_plot, start_row, start_col)
+        excel_data = generate_excel_bytes(
+            trial_name,
+            genotypes,
+            final_grids,
+            reps,
+            rows,
+            cols,
+            start_plot,
+            start_row,
+            start_col,
+            trial_details=trial_details,
+            existing_file=existing_file)
+        # Determine the filename AND the button text
+        if existing_file is not None:
+            dl_name = existing_file.name
+            btn_label = f"💾 Download Updated Master: {existing_file.name}"
+        else:
+            dl_name = f"{trial_name}_Field_Layout.xlsx".replace(" ", "_")
+            btn_label = f"💾 Download {trial_name} Layout"
         
-        dl_name = f"{trial_name}_Field_Layout.xlsx".replace(" ", "_")
         st.download_button(
-            label=f"💾 Download {trial_name} Layout", 
+            label=btn_label, 
             data=excel_data, 
             file_name=dl_name, 
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
